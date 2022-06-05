@@ -10,11 +10,12 @@ mod commands;
 use commands::math::*;
 use commands::translate::*;
 use commands::alpaca_stocks::*;
+use commands::reddit::*;
 
 // Structure guide https://github.com/serenity-rs/serenity/blob/current/examples/e06_sample_bot_structure/src/main.rs
 
 #[group]
-#[commands(ping, multiply, define, stock)]
+#[commands(ping, multiply, define, stock, reddit)]
 struct General;
 
 struct Handler;
