@@ -5,7 +5,7 @@ use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
-use std::env;
+// use std::env;
 
 use serde_json::Value;
 use std::collections::HashMap;

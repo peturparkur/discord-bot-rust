@@ -1,0 +1,9 @@
+version: "3.7"
+
+services:
+  peter_bot:
+    image: peter_bot
+    restart: unless-stopped
+    # command: ./discord-bot
+    env_file:
+      - .env
