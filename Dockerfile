@@ -18,6 +18,8 @@ RUN rm src/*.rs
 
 # copy read files and build
 COPY ./src ./src
+
+# Run the bash command: `rm <path>`
 RUN ["/bin/bash", "-c", "rm ./target/release/deps/${BINARY_NAME//-/_}*"]
 RUN cargo build --release
 
