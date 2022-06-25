@@ -40,9 +40,9 @@ struct Post {
 pub async fn reddit(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
     let subreddit: String = args.single()?;
-    let count = args.single::<u32>().unwrap_or(50);
     let order = args.single::<String>().unwrap_or("hot".to_string());
-    let number = match args.single::<i32>() { Ok(x) => Some(x), Err(err) => None}; // -1 indicates we take a random from the entire range
+    let count = args.single::<u32>().unwrap_or(50);
+    let number = match args.single::<i32>() { Ok(x) => Some(x - 1), Err(err) => None}; // -1 indicates we take a random from the entire range
 
     // let order = "new".to_string(); // Could be hot, new, top
     let url = format!("https://www.reddit.com/r/{}/{}.json", subreddit, order);
@@ -98,7 +98,7 @@ pub async fn reddit(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
     // select which post we want to send
     let _post = match number {
         Some(x) => {
-            posts.iter().nth(x as usize).unwrap()
+            posts.iter().nth(std::cmp::max(x, 0) as usize).unwrap()
         },
         None => {
             let mut rng = rand::thread_rng();
