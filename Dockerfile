@@ -1,6 +1,8 @@
+ARG BINARY_NAME = discord-bot
+
 FROM rust:1.61 as builder
-RUN USER=root cargo new --bin discord-bot-build
-WORKDIR /discord-bot-build
+RUN USER=root cargo new --bin $BINARY_NAME-build
+WORKDIR /$BINARY_NAME-build
 
 # copy dependencies and build for caching
 COPY ./Cargo.lock ./Cargo.lock
@@ -12,7 +14,7 @@ RUN rm src/*.rs
 
 # copy read files and build
 COPY ./src ./src
-RUN rm ./target/release/deps/discord-bot*
+RUN rm ./target/release/deps/$BINARY_NAME*
 RUN cargo build --release
 
 FROM debian:buster-slim
@@ -24,5 +26,5 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifi
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV SSL_CERT_DIR=/etc/ssl/certs
 
-COPY --from=builder /discord-bot-build/target/release/discord-bot .
+COPY --from=builder /$BINARY_NAME-build/target/release/$BINARY_NAME .
 CMD ["discord-bot"]
