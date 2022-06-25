@@ -5,6 +5,7 @@ use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
+use rand::prelude::*;
 // use std::env;
 
 use serde_json::Value;
@@ -41,6 +42,7 @@ pub async fn reddit(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
     let subreddit: String = args.single()?;
     let count = args.single::<u32>().unwrap_or(50);
     let order = args.single::<String>().unwrap_or("hot".to_string());
+    let number = match args.single::<i32>() { Ok(x) => Some(x), Err(err) => None}; // -1 indicates we take a random from the entire range
 
     // let order = "new".to_string(); // Could be hot, new, top
     let url = format!("https://www.reddit.com/r/{}/{}.json", subreddit, order);
@@ -93,10 +95,25 @@ pub async fn reddit(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
         }
     });
 
-    // posts have a data struct to describe them
+    // select which post we want to send
+    let _post = match number {
+        Some(x) => {
+            posts.iter().nth(x as usize).unwrap()
+        },
+        None => {
+            let mut rng = rand::thread_rng();
+            let r = rng.gen_range(0..posts.len());
 
+            posts.iter().nth(r).unwrap()
+        }
+    };
+
+
+    // posts have a data struct to describe them
     msg.channel_id.send_message(&ctx.http, move |m| {
-        let p = posts.first().unwrap();
+        // let p = posts.first().unwrap();
+        let p = _post; // the selected post
+
         if p.post_hint.is_none(){
             m.content("".to_string() + &p.title + &"\n".to_string() + &p.self_text.as_ref().unwrap());
         }
