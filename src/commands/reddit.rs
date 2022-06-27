@@ -9,7 +9,9 @@ use rand::prelude::*;
 // use std::env;
 
 use serde_json::Value;
+use tokio::io::AsyncWriteExt;
 use std::collections::HashMap;
+use std::io::Write;
 
 // dotenv::dotenv().expect("Failed to load .env file");
 // let url = format!("https://api.dictionaryapi.dev/api/v2/entries/en/{}", word);
@@ -31,7 +33,7 @@ struct Post {
     url: String, // idk??
     url_overridden_by_dest: Option<String>, // image link
     created_utc: Option<f64>, // time of creation
-    self_text: Option<String>, // if text post -> content
+    selftext: Option<String>, // if text post -> content
 }
 
 
@@ -78,7 +80,7 @@ pub async fn reddit(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
         .unwrap()
         .as_array()
         .unwrap();
-    println!("{:?}", data.first().unwrap());
+    // println!("{:?}", data.first().unwrap());
     let posts = data
         .iter()
         .map(
@@ -108,26 +110,74 @@ pub async fn reddit(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
         }
     };
 
-
+    // get the extension of the file -> this is to get .jpg, .png, .mp4, etc...
+    let _extension = match &_post.url_overridden_by_dest
+        .as_ref() {
+            Some(x) => Some(x
+                .split(".")
+                .last()
+                .unwrap()
+            ),
+            None => None,
+        };
+    
+    // Getting image content ahead of time -> Due to message contructor is synchronoused code
+    let _img_bytes = match &_post.url_overridden_by_dest {
+        Some(_url) => {
+            Ok(reqwest::get(_url)
+                .await
+                .unwrap()
+                .bytes()
+                .await
+                .unwrap())
+        },
+        None => {
+            Err("Not Good")
+        }
+    };
+    
     // posts have a data struct to describe them
-    msg.channel_id.send_message(&ctx.http, move |m| {
-        // let p = posts.first().unwrap();
+    let _message = msg.channel_id.send_message(&ctx.http, move |m| {
         let p = _post; // the selected post
 
+        println!("POST: \n{:?}", &p);
+
+        let mut r = (&p.title).clone();
+
         if p.post_hint.is_none(){
-            m.content("".to_string() + &p.title + &"\n".to_string() + &p.self_text.as_ref().unwrap());
+            // Text Content
+            r += &match &p.selftext.as_ref() {
+                Some(s) => {
+                    // Goddamn this is looking weird :P
+                    |s : &&String| -> String {
+                        if s == &&"".to_string() {
+                            return "".to_string()
+                        }
+                        return format!("\n--------\n{}", s)
+                    }(s)
+                },
+                None => {
+                    "".to_string()
+                },
+            };
+            m.content(&r);
         }
         else{
-            m.content(&p.title);
-            // let _resp = reqwest::get(p.url_overridden_by_dest.as_ref().unwrap());
-            // m.add_embed(
-            //     |e| {
-            //         e.image(&p.url_overridden_by_dest.as_ref().unwrap());
-            //         e
-            //     });
-            m.add_file(serenity::model::channel::AttachmentType::Image(Url::parse(p.url_overridden_by_dest.as_ref().unwrap()).expect("Couldnt parse url")));
+            // Multi-media content
+            m.content(&r);
+            println!("CONTENT TYPE: {}", &p.post_hint.as_ref().unwrap());
+            let cow = std::borrow::Cow::from(_img_bytes.unwrap().to_vec());
+            println!("Sending -> tmp.{}", _extension.unwrap());
+
+            if p.over_18 {
+                m.add_file(AttachmentType::Bytes { data: cow, filename: format!("SPOILER_tmp.{}", _extension.unwrap()) });
+            }
+            else {
+                m.add_file(AttachmentType::Bytes { data: cow, filename: format!("tmp.{}", _extension.unwrap()) });
+            }
         }
         return m
     }).await?;
+
     Ok(())
 }
