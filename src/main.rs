@@ -31,7 +31,7 @@ impl EventHandler for Handler {
 #[tokio::main]
 async fn main() {
 
-    dotenv::dotenv().expect("Failed to load .env file");
+    // dotenv::dotenv().expect("Failed to load .env file");
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
     println!("token_env: {}", token);
 
