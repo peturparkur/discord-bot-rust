@@ -41,6 +41,9 @@ struct Post {
 #[command]
 pub async fn reddit(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
+    // consider creating system to parse named args!
+    args = args.trimmed().clone();
+
     let subreddit: String = args.single()?;
     let order = args.single::<String>().unwrap_or("hot".to_string());
     let count = args.single::<u32>().unwrap_or(50);
@@ -164,18 +167,25 @@ pub async fn reddit(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
         }
         else{
             // Multi-media content
-            m.content(&r);
             println!("CONTENT TYPE: {}", &p.post_hint.as_ref().unwrap());
             let cow = std::borrow::Cow::from(_img_bytes.unwrap().to_vec());
             println!("Sending -> tmp.{}", _extension.unwrap());
 
-            if p.over_18 {
+            if p.over_18 || p.spoiler {
+                if p.over_18 {
+                    r = format!("NSFW - {}", &r);
+                }
+                if p.spoiler {
+                    r = format!("SPOILER - {}", &r);
+                }
                 m.add_file(AttachmentType::Bytes { data: cow, filename: format!("SPOILER_tmp.{}", _extension.unwrap()) });
             }
             else {
                 m.add_file(AttachmentType::Bytes { data: cow, filename: format!("tmp.{}", _extension.unwrap()) });
             }
         }
+
+        m.content(&r); // Add Title -> Written message
         return m
     }).await?;
 
